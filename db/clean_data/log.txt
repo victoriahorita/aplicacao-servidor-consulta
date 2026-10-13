@@ -1,0 +1,76 @@
+
+==================================================
+CARGOS
+==================================================
+Quantidade de registros: 1092160
+Quantidade de colunas: 8
+
+Tipos das colunas:
+
+Nome                               string
+CPF                                string
+Código da carreira                 string
+Descrição do cargo emprego         string
+UF da UPAG de vinculação           string
+Denominação do órgão de atuação    string
+Mês de referência                  string
+Valor da remuneração                Int64
+
+Valores ausentes:
+
+Nome                               0
+CPF                                0
+Código da carreira                 0
+Descrição do cargo emprego         0
+UF da UPAG de vinculação           0
+Denominação do órgão de atuação    0
+Mês de referência                  0
+Valor da remuneração               0
+
+==================================================
+APOSENTADOS
+==================================================
+Quantidade de registros: 722
+Quantidade de colunas: 18
+
+Tipos das colunas:
+
+Nome                                                        string
+CPF                                                         string
+Matrícula do Servidor                                       string
+Nome do órgão                                               string
+Sigla do órgão                                              string
+Código do órgão superior                                    string
+Cargo                                                       string
+Classe                                                      string
+Padrão                                                      string
+Referência                                                  string
+Nível                                                       string
+Tipo de Aposentadoria                                       string
+Fundamentação da inatividade                                string
+Nome Diploma Legal                                          string
+Data publicação do Diploma Legal                     datetime64[s]
+Ocorrência de ingresso no serviço público                   string
+Data de ocorrência de ingresso no serviço público    datetime64[s]
+Valor do Rendimento Líquido                                  Int64
+
+Valores ausentes:
+
+Nome                                                   0
+CPF                                                    0
+Matrícula do Servidor                                  0
+Nome do órgão                                          0
+Sigla do órgão                                         0
+Código do órgão superior                               0
+Cargo                                                  0
+Classe                                                47
+Padrão                                               205
+Referência                                             0
+Nível                                                  0
+Tipo de Aposentadoria                                  8
+Fundamentação da inatividade                           8
+Nome Diploma Legal                                   713
+Data publicação do Diploma Legal                       0
+Ocorrência de ingresso no serviço público              0
+Data de ocorrência de ingresso no serviço público      0
+Valor do Rendimento Líquido                            0
