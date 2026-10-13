@@ -1,5 +1,4 @@
 .env
 db/raw_data/
-db/clean_data/
 .venv/
 __pycache__/
