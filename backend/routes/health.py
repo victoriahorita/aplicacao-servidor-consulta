@@ -2,7 +2,7 @@ import psycopg
 from flask import Blueprint, jsonify
 from db import get_connection
 
-health = Blueprint("health", __name__)
+health = Blueprint("health", __name__, url_prefix="/health")
 
 @health.route('/', methods=['GET'])
 def check_health():
