@@ -1,128 +1,119 @@
-import '../servidor_filtros.dart';
-import '../servidor_model.dart';
+import 'dart:async';
+import 'dart:convert';
 
-/// [ServidorRepository] é a camada de acesso a dados (Data Layer).
-/// Atualmente utiliza dados mockados em memória para desenvolvimento ágil,
-/// mas possui a exata mesma assinatura exigida para chamadas HTTP com a API Flask.
+import 'package:consulta_servidor/core/config/app_config.dart';
+import 'package:consulta_servidor/core/utils/input_sanitizier.dart';
+import 'package:consulta_servidor/features/consulta/models/servidor_filtros.dart';
+import 'package:consulta_servidor/features/consulta/models/servidor_model.dart';
+import 'package:http/http.dart' as http;
+
+/// [ServidorRepository] é a camada de comunicação com a API.
 class ServidorRepository {
-  // Base de dados mockada expandida para testar múltiplos cenários de busca
-  final List<Servidor> _servidoresDb = const [
-    Servidor(
-      id: 1,
-      nome: 'João Silva',
-      cpf: '123.456.789-00',
-      cargo: 'Analista de Infraestrutura',
-      uf: 'DF',
-      orgao: 'Ministério da Educação',
-      remuneracao: 8500.00,
-    ),
-    Servidor(
-      id: 2,
-      nome: 'Maria Souza',
-      cpf: '987.654.321-00',
-      cargo: 'Professora do Magistério Superior',
-      uf: 'RJ',
-      orgao: 'Universidade Federal',
-      remuneracao: 9200.50,
-    ),
-    Servidor(
-      id: 3,
-      nome: 'João Sarney Silva',
-      cpf: '143.456.789-00',
-      cargo: 'Analista de Sistemas',
-      uf: 'DF',
-      orgao: 'Ministério da Economia',
-      remuneracao: 11400.00,
-    ),
-    Servidor(
-      id: 4,
-      nome: 'Carlos Alberto Souza',
-      cpf: '234.567.890-11',
-      cargo: 'Auditor Fiscal',
-      uf: 'SP',
-      orgao: 'Receita Federal',
-      remuneracao: 21000.00,
-    ),
-    Servidor(
-      id: 5,
-      nome: 'Fernanda Rodrigues',
-      cpf: '345.678.901-22',
-      cargo: 'Assistente Administrativo',
-      uf: 'BA',
-      orgao: 'Ministério da Saúde',
-      remuneracao: 4300.00,
-    ),
-    Servidor(
-      id: 6,
-      nome: 'Ricardo Martins',
-      cpf: '456.789.012-33',
-      cargo: 'Engenheiro Civil',
-      uf: 'RS',
-      orgao: 'Ministério da Infraestrutura',
-      remuneracao: 10800.00,
-    ),
-    Servidor(
-      id: 7,
-      nome: 'Juliana Ferreira',
-      cpf: '567.890.123-44',
-      cargo: 'Técnica de Enfermagem',
-      uf: 'DF',
-      orgao: 'Hospital das Forças Armadas',
-      remuneracao: 5100.00,
-    ),
-  ];
+  final http.Client _httpClient;
 
-  /// Consulta os servidores aplicando múltiplos filtros simultâneos.
+  ServidorRepository({http.Client? httpClient})
+    : _httpClient = httpClient ?? http.Client();
+
+  /// Consulta os servidores consumindo a rota GET /api/servidores do Flask
   Future<List<Servidor>> buscarServidores(ServidorFiltros filtros) async {
-    // 1. Simula latência de conexão com o banco de dados (1 segundo)
-    await Future.delayed(const Duration(milliseconds: 1000));
-
-    // 2. Simulação de falha: permite testar como o app reage a erros do servidor
-    if (filtros.nome != null && filtros.nome!.toLowerCase() == 'erro') {
-      throw Exception(
-        'Falha temporária ao comunicar com o banco de dados PostgreSQL.',
-      );
+    // 1. Validação defensiva (Evita enviar parâmetros inválidos)
+    if (!InputSanitizer.validarUf(filtros.uf)) {
+      throw const FormatException('A UF informada é inválida.');
     }
 
-    // 3. Aplicação encadeada de filtros (Busca Combinada Avançada)
-    return _servidoresDb.where((servidor) {
-      // Filtro por Nome (suporta busca exata ou por similaridade)
-      if (filtros.nome != null && filtros.nome!.isNotEmpty) {
-        final nomeFiltro = filtros.nome!.toLowerCase();
-        final nomeServidor = servidor.nome.toLowerCase();
+    final Map<String, String> queryParams = {};
 
-        if (filtros.buscaSimilar) {
-          // Busca por similaridade: contém o trecho digitado
-          if (!nomeServidor.contains(nomeFiltro)) return false;
-        } else {
-          // Busca exata: o nome precisa ser idêntico
-          if (nomeServidor != nomeFiltro) return false;
-        }
+    if (filtros.nome != null && filtros.nome!.isNotEmpty) {
+      final nomeSanitizado = InputSanitizer.sanitizarNome(
+        filtros.nome!,
+        buscaSimilar: filtros.buscaSimilar,
+      );
+
+      // Conforme o api.py: se for similaridade usa ?similar=, senão usa ?nome=
+      if (filtros.buscaSimilar) {
+        queryParams['similar'] = nomeSanitizado;
+      } else {
+        queryParams['nome'] = nomeSanitizado;
       }
+    }
 
-      // Filtro por Cargo / Profissão
-      if (filtros.cargo != null && filtros.cargo!.isNotEmpty) {
-        final cargoFiltro = filtros.cargo!.toLowerCase();
-        final cargoServidor = servidor.cargo.toLowerCase();
-        if (!cargoServidor.contains(cargoFiltro)) return false;
+    if (filtros.cargo != null && filtros.cargo!.isNotEmpty) {
+      queryParams['cargo'] = filtros.cargo!;
+    }
+
+    if (filtros.uf != null && filtros.uf!.isNotEmpty) {
+      queryParams['uf'] = filtros.uf!.toUpperCase().trim();
+    }
+
+    if (filtros.orgao != null && filtros.orgao!.isNotEmpty) {
+      queryParams['orgao'] = filtros.orgao!;
+    }
+
+    // Conforme o api.py: limite de registros retornados
+    queryParams['limite'] = filtros.limite.toString();
+
+    // 3. Construção robusta e dinâmica da URL sem hardcode
+    final baseUrl = Uri.parse('${AppConfig.apiBaseUrl}/api/servidores');
+    final urlFinal = baseUrl.replace(queryParameters: queryParams);
+
+    try {
+      // 4. Execução da chamada HTTP com Timeout configurável
+      final resposta = await _httpClient
+          .get(urlFinal)
+          .timeout(
+            Duration(seconds: AppConfig.timeoutSegundos),
+            onTimeout: () {
+              throw TimeoutException(
+                'Tempo limite de busca excedido (${AppConfig.timeoutSegundos}s). O banco de dados demorou para responder.',
+              );
+            },
+          );
+
+      // 5. Tratamento de códigos de status HTTP conforme a api.py
+      switch (resposta.statusCode) {
+        case 200:
+          // A API Flask retorna uma lista JSON: [{"id": ..., "nome": ...}]
+          final List<dynamic> listaJson = jsonDecode(
+            utf8.decode(resposta.bodyBytes),
+          );
+
+          return listaJson
+              .map(
+                (mapa) => Servidor(
+                  id: mapa['id'] as int,
+                  nome: mapa['nome'] as String,
+                  cpf: mapa['cpf'] as String,
+                  cargo: mapa['cargo'] as String,
+                  uf: mapa['uf'] as String,
+                  orgao: mapa['orgao'] as String,
+                  // Converte num para double tratando casos onde a remuneração venha como int
+                  remuneracao: (mapa['remuneracao'] as num).toDouble(),
+                ),
+              )
+              .toList();
+
+        case 503:
+          // Tratamento explícito da exceção psycopg.Error do api.py
+          throw Exception(
+            'O banco de dados PostgreSQL está temporariamente desconectado.',
+          );
+
+        case 400:
+          throw const FormatException(
+            'Parâmetros de busca inválidos enviados à API.',
+          );
+
+        default:
+          throw Exception(
+            'Falha na resposta do servidor: Código HTTP ${resposta.statusCode}',
+          );
       }
-
-      // Filtro por Unidade Federativa (UF)
-      if (filtros.uf != null && filtros.uf!.isNotEmpty) {
-        final ufFiltro = filtros.uf!.toUpperCase();
-        final ufServidor = servidor.uf.toUpperCase();
-        if (ufServidor != ufFiltro) return false;
-      }
-
-      // Filtro por Órgão / Instituição
-      if (filtros.orgao != null && filtros.orgao!.isNotEmpty) {
-        final orgaoFiltro = filtros.orgao!.toLowerCase();
-        final orgaoServidor = servidor.orgao.toLowerCase();
-        if (!orgaoServidor.contains(orgaoFiltro)) return false;
-      }
-
-      // Passou por todos os critérios ativos
-      return true;
-    }).toList();
+    } on TimeoutException {
+      rethrow;
+    } on FormatException {
+      rethrow;
+    } catch (erro) {
+      throw Exception('Não foi possível se conectar à API Flask: $erro');
+    }
   }
 }

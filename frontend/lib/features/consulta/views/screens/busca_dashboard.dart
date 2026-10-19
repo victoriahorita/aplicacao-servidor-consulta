@@ -6,6 +6,7 @@ import 'package:consulta_servidor/features/consulta/views/screens/consulta_resul
 import 'package:consulta_servidor/features/consulta/views/screens/detalhes_servidor.dart';
 import 'package:consulta_servidor/features/consulta/views/widgets/form_busca.dart';
 import 'package:consulta_servidor/features/consulta/views/widgets/stat_card.dart';
+import 'package:consulta_servidor/features/historico/services/historico_services.dart';
 import 'package:flutter/material.dart';
 
 /// [ScreenBuscaDashboard] é o componente orquestrador (Smart Widget) do painel principal.
@@ -35,10 +36,14 @@ class _ScreenBuscaDashboardState extends State<ScreenBuscaDashboard> {
       final List<Servidor> resultados = await widget.controller
           .buscarServidores(filtros);
 
-      // Verificação essencial para Web/Desktop: certifica que o widget continua montado na árvore
+      HistoricoService().salvarBusca(
+        filtros: filtros,
+        totalResultados: resultados.length,
+      );
+
       if (!mounted) return;
 
-      // 2. Roteamento condicional (Requisitos Funcionais)
+      // 2. Roteamento condicional
       if (resultados.isEmpty) {
         _mostrarAlerta(
           icone: Icons.search_off_rounded,
