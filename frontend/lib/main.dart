@@ -1,19 +1,21 @@
-import 'package:consulta_servidor/features/consulta/views/screen_consulta.dart';
+import 'package:consulta_servidor/core/layout/main_layout.dart';
+import 'package:consulta_servidor/core/theme/app_theme.dart';
 import 'package:flutter/material.dart';
 
-void main() {
-  runApp(const MyWebApp());
-}
-
-class MyWebApp extends StatelessWidget {
-  const MyWebApp({super.key});
+class ConsultaServidorApp extends StatelessWidget {
+  const ConsultaServidorApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'My Web App',
-      theme: ThemeData(primarySwatch: Colors.blue),
-      home: const ScreenConsulta(),
+      title: 'Portal Servidores',
+      debugShowCheckedModeBanner: false,
+      theme: AppTheme.light, // Aplicando nosso tema personalizado
+      // Iniciamos com o MainLayout envolvendo nossa tela de Busca
+      home: const MainLayout(
+        titulo: 'Buscar Servidores',
+        conteudo: ScreenBuscaDashboard(),
+      ),
     );
   }
 }
