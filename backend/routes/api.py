@@ -30,10 +30,24 @@ def search():
     uf = req.args.get("uf", None)
     orgao = req.args.get("orgao", None)
     similar = req.args.get("similar", None)
+
+    # aceita "limit" (padrão do enunciado) e "limite" (compatibilidade)
+    valor_limite = req.args.get("limit")
+
+    if valor_limite is None:
+        valor_limite = req.args.get("limite", "100")
+
     try:
-        limite = int(req.args.get("limite", 100))
-    except ValueError:
-        limite = 100
+        limite = int(valor_limite)
+    except (ValueError, TypeError):
+        return jsonify({
+            "erro": "O parâmetro limit deve ser um número inteiro."
+        }), 400
+
+    if limite < 1 or limite > 100:
+        return jsonify({
+            "erro": "O parâmetro limit deve estar entre 1 e 100."
+        }), 400
     
     combinacoes = []
     parametros = []
@@ -58,7 +72,9 @@ def search():
 
     query = "SELECT id, nome, cpf, cargo, uf, orgao, remuneracao FROM servidores_busca"
     if combinacoes:
-        query += " WHERE " + " AND ".join(combinacoes) + " ORDER BY nome LIMIT %s"
+        query += " WHERE " + " AND ".join(combinacoes)
+
+    query += " ORDER BY nome, id LIMIT %s"
 
     try:
         result = []
