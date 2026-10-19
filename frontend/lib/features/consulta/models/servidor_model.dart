@@ -1,3 +1,5 @@
+import 'package:intl/intl.dart';
+
 class Servidor {
   final int id;
   final String nome;
@@ -16,4 +18,12 @@ class Servidor {
     required this.orgao,
     required this.remuneracao,
   });
+
+  String get remuneracaoFormatada {
+    return NumberFormat.currency(
+      locale: 'pt_BR',
+      symbol: 'R\$',
+      decimalDigits: 2,
+    ).format(remuneracao);
+  }
 }

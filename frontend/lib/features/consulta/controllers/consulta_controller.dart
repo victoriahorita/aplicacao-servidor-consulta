@@ -6,20 +6,20 @@ class ConsultaController extends ChangeNotifier {
   final ServidorRepository _servidorRepository;
 
   // controlador aguarda o estado atual
-  ConsultaState _state = ConsultaInitial();
+  ConsultaState actualState = ConsultaInitial();
 
   // INjeção de dependência do repositório de servidores
   ConsultaController(this._servidorRepository);
 
   Future<void> realizarBusca(String nome) async {
-    _state = ConsultaLoading();
+    actualState = ConsultaLoading();
     notifyListeners();
 
     try {
       final servidores = await _servidorRepository.buscarServidores(nome);
-      _state = ConsultaSuccess(servidores);
+      actualState = ConsultaSuccess(servidores);
     } catch (e) {
-      _state = ConsultaError('Erro ao buscar servidores: $e');
+      actualState = ConsultaError('Erro ao buscar servidores: $e');
     } finally {
       notifyListeners();
     }

@@ -21,6 +21,15 @@ class ServidorRepository {
       orgao: 'Secretaria de Saúde',
       remuneracao: 4500.00,
     ),
+    Servidor(
+      id: 3,
+      nome: 'João Sarney Silva',
+      cpf: '143.456.789-00',
+      cargo: 'Analista Plano',
+      uf: 'RJ',
+      orgao: 'Secretaria de Educação',
+      remuneracao: 7000.00,
+    ),
   ];
 
   // Busca produtos no backend pelo nome, retorna um [Future] porque é assincrono.
