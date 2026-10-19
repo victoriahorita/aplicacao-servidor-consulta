@@ -1,5 +1,9 @@
-import 'package:consulta_servidor/core/theme/app_theme.dart';
+// ARQUIVO: lib/core/layout/main_layout.dart
+
 import 'package:flutter/material.dart';
+
+import '../theme/app_theme.dart';
+import '../widgets/status_banco.dart';
 
 class MainLayout extends StatelessWidget {
   final Widget conteudo;
@@ -11,15 +15,15 @@ class MainLayout extends StatelessWidget {
     super.key,
     required this.conteudo,
     required this.titulo,
-    this.indiceMenuAtivo = 1, // 0: Início, 1: Buscar, 2: Histórico
+    this.indiceMenuAtivo = 1,
     this.mostrarBotaoVoltar = false,
   });
 
+  /// Navega entre as páginas principais substituindo a pilha de telas.
   void _navegarPara(BuildContext context, int novoIndice) {
+    // Evita recarregar a mesma tela se o usuário clicar no menu onde já está
     if (novoIndice == indiceMenuAtivo) return;
 
-    // Remove todas as rotas anteriores e substitui pela tela selecionada
-    // evitando empilhar páginas infinitas na memória do navegador/desktop
     switch (novoIndice) {
       case 1:
         Navigator.of(context)
@@ -35,134 +39,179 @@ class MainLayout extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // SelectionArea no topo garante seleção de texto com o mouse em qualquer tela do app
+    final bool isMobile = MediaQuery.sizeOf(context).width < 800;
+
     return SelectionArea(
       child: Scaffold(
+        // Menu Gaveta
+        drawer: isMobile
+            ? Drawer(
+                backgroundColor: AppTheme.azulEscuro,
+                child: _ConteudoBarraLateral(
+                  indiceMenuAtivo: indiceMenuAtivo,
+                  onNavegar: (indice) => _navegarPara(context, indice),
+                ),
+              )
+            : null,
         body: Row(
           children: [
-            // ==========================================
-            // 1. BARRA LATERAL (Sidebar Fixa)
-            // ==========================================
-            Container(
-              width: 250,
-              color: AppTheme.azulEscuro,
-              child: Column(
-                children: [
-                  // Logo Institucional
-                  Padding(
-                    padding: const EdgeInsets.all(24.0),
-                    child: Row(
-                      children: const [
-                        Icon(
-                          Icons.account_balance,
-                          color: Colors.white,
-                          size: 28,
-                        ),
-                        SizedBox(width: 12),
-                        Expanded(
-                          child: Text(
-                            'Servidor Federal',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const Divider(color: Colors.white24, height: 1),
-
-                  // Menus Relevantes e com Ação Real
-                  _MenuItem(
-                    icone: Icons.search,
-                    titulo: 'Buscar Servidores',
-                    ativo: indiceMenuAtivo == 1,
-                    onTap: () => _navegarPara(context, 1),
-                  ),
-                  _MenuItem(
-                    icone: Icons.history,
-                    titulo: 'Histórico de Buscas',
-                    ativo: indiceMenuAtivo == 2,
-                    onTap: () => _navegarPara(context, 2),
-                  ),
-
-                  const Spacer(),
-
-                  // Perfil do Usuário
-                  const Divider(color: Colors.white24, height: 1),
-                  const ListTile(
-                    leading: CircleAvatar(
-                      backgroundColor: Colors.white24,
-                      child: Icon(Icons.person, color: Colors.white),
-                    ),
-                    title: Text(
-                      'Convidado',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    subtitle: Text(
-                      'Acesso Público',
-                      style: TextStyle(color: Colors.white54, fontSize: 12),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                ],
+            // Barra Lateral Fixa para Monitores Desktop e Web
+            if (!isMobile)
+              Container(
+                width: 250,
+                color: AppTheme.azulEscuro,
+                child: _ConteudoBarraLateral(
+                  indiceMenuAtivo: indiceMenuAtivo,
+                  onNavegar: (indice) => _navegarPara(context, indice),
+                ),
               ),
-            ),
 
-            // ==========================================
-            // 2. CONTEÚDO PRINCIPAL (Com TopBar Única)
-            // ==========================================
+            // Conteúdo Central
             Expanded(
               child: Column(
                 children: [
-                  // TopBar Padronizada
+                  // TopBar
                   Container(
                     height: 70,
                     color: Colors.white,
-                    padding: const EdgeInsets.symmetric(horizontal: 24),
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
                     child: Row(
                       children: [
+                        // Ícone do Drawer (Hamburguer) visível apenas no mobile
+                        if (isMobile && !mostrarBotaoVoltar) ...[
+                          Builder(
+                            builder: (ctx) => IconButton(
+                              icon: const Icon(
+                                Icons.menu,
+                                color: AppTheme.textoPrincipal,
+                              ),
+                              tooltip: 'Abrir menu de navegação',
+                              onPressed: () => Scaffold.of(ctx).openDrawer(),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                        ],
+
+                        // Botão de voltar para telas empilhadas
                         if (mostrarBotaoVoltar) ...[
                           IconButton(
                             icon: const Icon(
                               Icons.arrow_back,
                               color: AppTheme.textoPrincipal,
                             ),
+                            tooltip: 'Voltar',
                             onPressed: () => Navigator.of(context).pop(),
-                            tooltip: 'Voltar para a página anterior',
                           ),
                           const SizedBox(width: 8),
                         ],
-                        Text(
-                          titulo,
-                          style: const TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                            color: AppTheme.textoPrincipal,
+
+                        // Título
+                        Expanded(
+                          child: Text(
+                            titulo,
+                            style: const TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: AppTheme.textoPrincipal,
+                            ),
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
-                        const Spacer(),
+
+                        IconButton(
+                          icon: const Icon(
+                            Icons.help_outline,
+                            color: Colors.grey,
+                            size: 20,
+                          ),
+                          tooltip: 'Sobre o Sistema',
+                          onPressed: () {},
+                        ),
+                        const SizedBox(width: 8),
                         const CircleAvatar(
+                          radius: 18,
                           backgroundColor: AppTheme.azulPrincipal,
-                          child: Icon(Icons.person, color: Colors.white),
+                          child: Icon(
+                            Icons.person,
+                            color: Colors.white,
+                            size: 20,
+                          ),
                         ),
                       ],
                     ),
                   ),
                   const Divider(height: 1, color: AppTheme.bordas),
 
-                  // O conteúdo de cada tela é injetado aqui sem criar outro Scaffold
+                  // Área onde a página (conteúdo) é desenhada
                   Expanded(child: conteudo),
                 ],
               ),
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _ConteudoBarraLateral extends StatelessWidget {
+  final int indiceMenuAtivo;
+  final ValueChanged<int> onNavegar;
+
+  const _ConteudoBarraLateral({
+    required this.indiceMenuAtivo,
+    required this.onNavegar,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      child: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(20.0),
+            child: Row(
+              children: const [
+                Icon(Icons.account_balance, color: Colors.white, size: 28),
+                SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    'Servidor Federal',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 17,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const Divider(color: Colors.white24, height: 1),
+          const SizedBox(height: 8),
+
+          // Itens de Navegação com seus respectivos índices
+          _MenuItem(
+            icone: Icons.search,
+            titulo: 'Buscar Servidores',
+            ativo: indiceMenuAtivo == 1,
+            onTap: () => onNavegar(1),
+          ),
+          _MenuItem(
+            icone: Icons.history,
+            titulo: 'Histórico de Buscas',
+            ativo: indiceMenuAtivo == 2,
+            onTap: () => onNavegar(2),
+          ),
+
+          const Spacer(),
+
+          // Status na base da barra lateral
+          const Divider(color: Colors.white24, height: 1),
+          const StatusConexaoBanco(),
+          const SizedBox(height: 8),
+        ],
       ),
     );
   }
@@ -186,8 +235,11 @@ class _MenuItem extends StatelessWidget {
     return Material(
       color: ativo ? AppTheme.azulPrincipal : Colors.transparent,
       child: ListTile(
-        leading: Icon(icone, color: Colors.white),
-        title: Text(titulo, style: const TextStyle(color: Colors.white)),
+        leading: Icon(icone, color: Colors.white, size: 20),
+        title: Text(
+          titulo,
+          style: const TextStyle(color: Colors.white, fontSize: 14),
+        ),
         hoverColor: Colors.white.withValues(alpha: 0.1),
         mouseCursor: SystemMouseCursors.click,
         onTap: onTap,

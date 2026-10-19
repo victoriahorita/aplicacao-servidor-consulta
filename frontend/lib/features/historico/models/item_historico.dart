@@ -1,3 +1,4 @@
+import 'package:consulta_servidor/core/utils/app_formatters.dart';
 import 'package:consulta_servidor/features/consulta/models/servidor_filtros.dart';
 
 class ItemHistorico {
@@ -13,11 +14,5 @@ class ItemHistorico {
     required this.totalResultados,
   });
 
-  String get dataFormatada {
-    final hora = dataHora.hour.toString().padLeft(2, '0');
-    final minuto = dataHora.minute.toString().padLeft(2, '0');
-    final dia = dataHora.day.toString().padLeft(2, '0');
-    final mes = dataHora.month.toString().padLeft(2, '0');
-    return '$dia/$mes às $hora:$minuto';
-  }
+  String get dataFormatada => AppFormatters.formatarDataHora(dataHora);
 }

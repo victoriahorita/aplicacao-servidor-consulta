@@ -1,5 +1,3 @@
-// ARQUIVO: lib/features/consulta/views/screen_detalhes_servidor.dart
-
 import 'package:consulta_servidor/features/consulta/models/servidor_model.dart';
 import 'package:flutter/material.dart';
 

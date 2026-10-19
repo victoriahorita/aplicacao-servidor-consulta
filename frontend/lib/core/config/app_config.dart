@@ -5,7 +5,7 @@ class AppConfig {
   /// URL base da API Flask.
   static const String apiBaseUrl = String.fromEnvironment(
     'API_BASE_URL',
-    defaultValue: 'http://localhost:5000',
+    defaultValue: 'http://localhost:3000',
   );
 
   /// Timeout global para requisições HTTP (em segundos)

@@ -1,4 +1,6 @@
 import 'package:consulta_servidor/core/layout/main_layout.dart';
+import 'package:consulta_servidor/core/utils/app_feedback.dart';
+import 'package:consulta_servidor/core/utils/navigation_utils.dart';
 import 'package:consulta_servidor/features/consulta/controllers/consulta_controller.dart';
 import 'package:consulta_servidor/features/consulta/models/servidor_filtros.dart';
 import 'package:consulta_servidor/features/consulta/models/servidor_model.dart';
@@ -52,8 +54,9 @@ class _ScreenBuscaDashboardState extends State<ScreenBuscaDashboard> {
         );
       } else if (resultados.length == 1) {
         // Redireciona diretamente para os detalhes caso haja apenas 1 resultado
+
         Navigator.of(context).push(
-          _criarRotaTransicaoSuave(
+          NavigationUtils.criarRotaFade(
             MainLayout(
               titulo: 'Detalhes do Servidor',
               indiceMenuAtivo: 1,
@@ -77,12 +80,11 @@ class _ScreenBuscaDashboardState extends State<ScreenBuscaDashboard> {
       }
     } catch (erro) {
       if (!mounted) return;
-      _mostrarAlerta(
+      AppFeedback.mostrarAlerta(
+        context,
         icone: Icons.cloud_off_rounded,
         titulo: 'Falha na Conexão',
-        mensagem:
-            'Não foi possível se comunicar com o servidor da base de dados: $erro',
-        isErro: true,
+        mensagem: 'Não foi possível se comunicar com o servidor: $erro',
       );
     } finally {
       if (mounted) {

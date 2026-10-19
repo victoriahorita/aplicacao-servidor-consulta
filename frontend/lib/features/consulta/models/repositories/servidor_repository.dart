@@ -69,10 +69,9 @@ class ServidorRepository {
             },
           );
 
-      // 5. Tratamento de códigos de status HTTP conforme a api.py
+      // 5. Tratamento de códigos de status HTTP
       switch (resposta.statusCode) {
         case 200:
-          // A API Flask retorna uma lista JSON: [{"id": ..., "nome": ...}]
           final List<dynamic> listaJson = jsonDecode(
             utf8.decode(resposta.bodyBytes),
           );
@@ -84,19 +83,15 @@ class ServidorRepository {
                   nome: mapa['nome'] as String,
                   cpf: mapa['cpf'] as String,
                   cargo: mapa['cargo'] as String,
-                  uf: mapa['uf'] as String,
+                  uf: mapa['uf'] as String? ?? 'Não informado',
                   orgao: mapa['orgao'] as String,
-                  // Converte num para double tratando casos onde a remuneração venha como int
                   remuneracao: (mapa['remuneracao'] as num).toDouble(),
                 ),
               )
               .toList();
 
         case 503:
-          // Tratamento explícito da exceção psycopg.Error do api.py
-          throw Exception(
-            'O banco de dados PostgreSQL está temporariamente desconectado.',
-          );
+          throw Exception('O banco de dados está indisponível.');
 
         case 400:
           throw const FormatException(

@@ -1,4 +1,4 @@
-import 'package:intl/intl.dart';
+import 'package:consulta_servidor/core/utils/app_formatters.dart';
 
 class Servidor {
   final int id;
@@ -19,11 +19,5 @@ class Servidor {
     required this.remuneracao,
   });
 
-  String get remuneracaoFormatada {
-    return NumberFormat.currency(
-      locale: 'pt_BR',
-      symbol: 'R\$',
-      decimalDigits: 2,
-    ).format(remuneracao);
-  }
+  String get remuneracaoFormatada => AppFormatters.formatarMoeda(remuneracao);
 }
