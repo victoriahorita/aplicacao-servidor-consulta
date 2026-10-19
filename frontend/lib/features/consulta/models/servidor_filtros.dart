@@ -7,6 +7,7 @@ class ServidorFiltros {
   final String? uf;
   final String? orgao;
   final bool buscaSimilar;
+  final int limite;
 
   const ServidorFiltros({
     this.nome,
@@ -14,5 +15,6 @@ class ServidorFiltros {
     this.uf,
     this.orgao,
     this.buscaSimilar = false,
+    this.limite = 100,
   });
 }
