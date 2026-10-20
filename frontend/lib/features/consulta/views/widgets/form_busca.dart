@@ -1,8 +1,7 @@
+import 'package:consulta_servidor/core/utils/app_feedback.dart';
+import 'package:consulta_servidor/features/consulta/controllers/consulta_controller.dart';
+import 'package:consulta_servidor/features/consulta/models/servidor_filtros.dart';
 import 'package:flutter/material.dart';
-
-import '../../../../core/utils/app_feedback.dart';
-import '../../controllers/consulta_controller.dart';
-import '../../models/servidor_filtros.dart';
 
 class FormConsulta extends StatefulWidget {
   final ConsultaController controller;

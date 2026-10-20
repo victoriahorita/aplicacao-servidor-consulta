@@ -7,16 +7,10 @@ por cargo, UF, orgão, nome e similaridade de nome.
 
 ```
 aplicacao-servidor-consulta/
-<<<<<<< HEAD
-├── backend/
-│   ├── routes/                     # armazena os endpoints
-│   │   └── health.py               # enpoint de verificação da api e conexão com o banco
-=======
 ├── backend/
 │   ├── routes/                     # armazena os endpoints
 │   │   └── health.py               # enpoint de verificação da api e conexão com o banco
 │   │   └── api.py                  # enpoint de busca de servidores
->>>>>>> origin/main
 │   ├── tests                       # testes automatizados
 │   ├── db.py                       # centraliza conexão com o PostreSQL
 │   └── server.py                   # inicializa servidor Flask
