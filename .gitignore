@@ -3,3 +3,4 @@ db/raw_data/
 .venv/
 __pycache__/
 db/clean_data/
+.vscode/
