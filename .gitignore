@@ -1,6 +1,20 @@
+# Variáveis de ambiente
 .env
+
+# Dados do banco
 db/raw_data/
+db/clean_data/
+
+# Ambiente virtual Python
 .venv/
 __pycache__/
 db/clean_data/
 .vscode/
+
+# Cache do Python
+__pycache__/
+
+# Cache dos testes
+.pytest_cache/
+.coverage
+htmlcov/

@@ -17,10 +17,32 @@ services:
       - ./db/init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
 
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U app -d servidores"]
+      test: ["CMD-SHELL", "pg_isready -U \"$${POSTGRES_USER}\" -d \"$${POSTGRES_DB}\""]
       interval: 5s
       timeout: 3s
       retries: 10
+    
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+
+    container_name: servidores-backend
+    restart: unless-stopped
+
+    ports:
+      - "3000:3000"
+
+    environment:
+      DB_HOST: db-server
+      DB_PORT: 5432
+      DB_NAME: ${DB_NAME}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+
+    depends_on:
+      db-server:
+        condition: service_healthy
 
 volumes:
   postgres_data:
