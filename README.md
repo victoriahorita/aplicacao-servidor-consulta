@@ -1,7 +1,7 @@
 # Consulta de Pessoas - Full Stack
 
 Aplicação Full Stack desenvolvida para consulta de dados cadastrais
-por CPF, nome e similaridade de nome.
+por cargo, UF, orgão, nome e similaridade de nome.
 
 ## Estrutura do projeto
 ```
@@ -9,6 +9,7 @@ aplicacao-servidor-consulta/
 ├── backend/                        
 │   ├── routes/                     # armazena os endpoints                     
 │   │   └── health.py               # enpoint de verificação da api e conexão com o banco    
+│   │   └── api.py                  # enpoint de busca de servidores  
 │   ├── tests                       # testes automatizados
 │   ├── db.py                       # centraliza conexão com o PostreSQL
 │   └── server.py                   # inicializa servidor Flask 
@@ -116,6 +117,59 @@ Resposta de erro retorna status HTTP `503 Service Unavailable`:
 {
   "status": "error",
   "database": "disconnected"
+}
+```
+
+#### Busca de servidores
+
+```
+GET /api/servidores?page=x&<filtros>
+```
+
+Retorna servidores ativos e aposentados, com paginação.
+É recomendado sempre mandar a página e pelo menos um filtro de busca (nome, cargo, uf, orgao ou similar) na requisição.
+Se nenhum filtro for mandado (apenas GET /api/servidores), o resultado fica vazio.
+
+| Parâmetro | Descrição | Exemplo |
+|-----------|-----------|---------|
+| `nome` | Nome completo (correspondência exata) | `nome=JOAO DA SILVA` |
+| `cargo` | Cargo (correspondência exata) | `cargo=PROFESSOR` |
+| `uf` | Sigla do estado | `uf=SP` |
+| `orgao` | Órgão (correspondência exata) | `orgao=MINISTERIO DA SAUDE` |
+| `similar` | Padrão de nome, usando `%` como curinga | `similar=%25silva%25` |
+| `limit` | Registros por página (padrão e máximo: 100) | `limit=20` |
+| `page` | Número da página (padrão: 1) | `page=2` |
+
+Exemplos:
+```
+http://127.0.0.1:3000/api/servidores?page=5&uf=SP&limit=80
+http://127.0.0.1:3000/api/servidores?page=2&similar=%silva%
+```
+
+Exemplo de resposta de sucesso, onde status `HTTP 200 OK`:
+```
+{
+  "data": [
+    {
+      "nome": "JOAO DA SILVA",
+      "cpf": "***.123.456-**",
+      "cargo": "PROFESSOR",
+      "uf": "SP",
+      "orgao": "MINISTERIO DA EDUCACAO",
+      "remuneracao": 8500.0
+    }
+  ],
+  "total": 1532
+}
+```
+
+`total` é a quantidade de registros encontrados com os filtros, considerando todas as páginas.
+
+Resposta de erro retorna status `HTTP 503 Service Unavailable`:
+```
+{
+  "status": "error",
+  "message": "Erro ao consultar banco!"
 }
 ```
 
