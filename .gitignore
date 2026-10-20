@@ -7,6 +7,9 @@ db/clean_data/
 
 # Ambiente virtual Python
 .venv/
+__pycache__/
+db/clean_data/
+.vscode/
 
 # Cache do Python
 __pycache__/
