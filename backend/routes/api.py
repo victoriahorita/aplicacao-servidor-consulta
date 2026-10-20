@@ -1,39 +1,27 @@
 import psycopg, logging
 from flask import Blueprint, jsonify, request as req
 from db import get_connection
-
-'''
-A aplicação deverá disponibilizar endpoints para realizar as consultas na base de dados. Exemplo: 
-GET /api/servidores?cargo=<cargo> 
-GET /api/servidores?uf=<uf> 
-GET /api/servidores?orgao=<orgao> 
-GET /api/servidores?nome=<nome>&cargo=<cargo>&uf=<uf> 
-GET /api/servidores?similar=”<%no%me%>”&limit=100    
-(sendo busca por similaridade e 100 o número máximo de pessoas com nome similar) 
-Buscas possíveis: 
-● Busca por nome; 
-● Busca por cargo/profissão; 
-● Busca por estado (UF); 
-● Busca por instituição/órgão; 
-● Combinação de diferentes filtros de busca; 
-● Envio dos dados dos registros encontrados no formato JSON.
-
-'''
-
+from psycopg.rows import dict_row
 
 api = Blueprint("api", __name__, url_prefix="/api")
 
 @api.route("/servidores", methods=['GET'])
 def search():
+    def safe_cast(param, tipo, default):
+        try:
+            return tipo(param)
+        except:
+            return default
+        
     nome = req.args.get("nome", None)
     cargo = req.args.get("cargo", None)
     uf = req.args.get("uf", None)
     orgao = req.args.get("orgao", None)
     similar = req.args.get("similar", None)
-    try:
-        limite = int(req.args.get("limite", 100))
-    except ValueError:
-        limite = 100
+    limite = safe_cast(req.args.get("limit"), int, 100)
+    pagina = safe_cast(req.args.get("page"), int, 1)
+    limite = max(1, min(limite, 100))
+    pagina = max(1, pagina)
     
     combinacoes = []
     parametros = []
@@ -53,26 +41,30 @@ def search():
     if similar:
         combinacoes.append("nome ILIKE %s")
         parametros.append(similar)
-    parametros.append(limite)
-    
 
-    query = "SELECT id, nome, cpf, cargo, uf, orgao, remuneracao FROM servidores_busca"
+    query = "SELECT nome, cpf, cargo, uf, orgao, remuneracao FROM servidores_busca"
     if combinacoes:
-        query += " WHERE " + " AND ".join(combinacoes) + " ORDER BY nome LIMIT %s"
+        query += " WHERE " + " AND ".join(combinacoes)
 
     try:
         result = []
         with get_connection() as conn:
-            cur = conn.cursor()
-            
-            for pessoa in cur.execute(query, parametros):
-                result.append({"id": pessoa[0], "nome": pessoa[1], "cpf": pessoa[2], "cargo": pessoa[3], "uf": pessoa[4], "orgao": pessoa[5], "remuneracao": pessoa[6]})
+            cur = conn.cursor(row_factory=dict_row)
 
-        return jsonify(result)
+            cur.execute(query, parametros)
+            total = len(cur.fetchall())
+
+            parametros.append(limite)
+            parametros.append((pagina - 1) * limite)
+            query += " ORDER BY nome, fonte, id LIMIT %s OFFSET %s"
+            cur.execute(query, parametros)
+            result = cur.fetchall()
+            
+        return jsonify(total=total, data=result)
 
     except psycopg.Error as e:
-        logging.error("Health check falhou: %s", e)
-        return jsonify({"status": "error","database": "disconnected"}), 503
+        logging.error("Busca de servidores falhou: %s", e)
+        return jsonify({"status": "error","message": "Erro ao consultar banco!"}), 503
 
 
 
