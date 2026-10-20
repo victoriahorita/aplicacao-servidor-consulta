@@ -17,67 +17,108 @@ class ServidorDataSource extends DataTableSource {
     if (index >= servidores.length) return null;
 
     final servidor = servidores[index];
+    final colors = Theme.of(context).colorScheme;
 
     return DataRow(
       color: WidgetStateProperty.resolveWith<Color?>((states) {
         if (states.contains(WidgetState.hovered)) {
-          return Theme.of(context).colorScheme.primaryContainer
-              .withValues(alpha: 0.25);
+          return colors.primaryContainer.withValues(alpha: 0.25);
         }
         return null;
       }),
       cells: [
-        // Coluna 1: Nome com Avatar
+        // Coluna 1: Nome com Avatar e Hero
         DataCell(
-          Row(
-            children: [
-              CircleAvatar(
-                radius: 16,
-                backgroundColor: const Color(0xFFE2E8F0),
-                child: Text(
-                  servidor.nome.isNotEmpty
-                      ? servidor.nome[0].toUpperCase()
-                      : '?',
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF334155),
-                    fontSize: 13,
+          SizedBox(
+            width: 220,
+            child: Row(
+              children: [
+                Hero(
+                  tag: 'avatar_${servidor.id}',
+                  child: CircleAvatar(
+                    radius: 16,
+                    backgroundColor: colors.primaryContainer,
+                    child: Text(
+                      servidor.nome.isNotEmpty
+                          ? servidor.nome[0].toUpperCase()
+                          : '?',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: colors.onPrimaryContainer,
+                        fontSize: 13,
+                      ),
+                    ),
                   ),
                 ),
-              ),
-              const SizedBox(width: 12),
-              Text(
-                servidor.nome,
-                style: const TextStyle(
-                  fontWeight: FontWeight.w600,
-                  color: Color(0xFF0F172A),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Tooltip(
+                    message: servidor.nome,
+                    child: Text(
+                      servidor.nome,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        color: colors.onSurface,
+                      ),
+                    ),
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
+
         // Coluna 2: Cargo
-        DataCell(Text(servidor.cargo)),
+        DataCell(
+          SizedBox(
+            width: 200,
+            child: Tooltip(
+              message: servidor.cargo,
+              child: Text(
+                servidor.cargo,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ),
+        ),
+
         // Coluna 3: Órgão
-        DataCell(Text(servidor.orgao)),
-        // Coluna 4: UF com Chip visual
+        DataCell(
+          SizedBox(
+            width: 220,
+            child: Tooltip(
+              message: servidor.orgao,
+              child: Text(
+                servidor.orgao,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ),
+        ),
+
+        // Coluna 4: UF
         DataCell(
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             decoration: BoxDecoration(
-              color: Colors.blue.shade50,
+              color: colors.secondaryContainer,
               borderRadius: BorderRadius.circular(6),
             ),
             child: Text(
               servidor.uf,
               style: TextStyle(
                 fontWeight: FontWeight.bold,
-                color: Colors.blue.shade800,
+                color: colors.onSecondaryContainer,
                 fontSize: 12,
               ),
             ),
           ),
         ),
+
         // Coluna 5: Remuneração Formatada
         DataCell(
           Text(
@@ -88,16 +129,20 @@ class ServidorDataSource extends DataTableSource {
             ),
           ),
         ),
-        // Coluna 6: Ação com feedback visual
+
+        // Coluna 6: Botão de Ação
         DataCell(
-          IconButton(
-            icon: const Icon(
-              Icons.arrow_forward_ios_rounded,
-              size: 16,
-              color: Color(0xFF0284C7),
+          SizedBox(
+            width: 50,
+            child: IconButton(
+              icon: Icon(
+                Icons.arrow_forward_ios_rounded,
+                size: 16,
+                color: colors.primary,
+              ),
+              tooltip: 'Visualizar dados completos',
+              onPressed: () => onVerDetalhes(servidor),
             ),
-            tooltip: 'Visualizar dados completos',
-            onPressed: () => onVerDetalhes(servidor),
           ),
         ),
       ],

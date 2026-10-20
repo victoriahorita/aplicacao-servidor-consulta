@@ -1,13 +1,16 @@
-import 'package:consulta_servidor/features/consulta/models/servidor_filtros.dart';
 import 'package:flutter/material.dart';
 
+import '../../../../core/utils/app_feedback.dart';
+import '../../controllers/consulta_controller.dart';
+import '../../models/servidor_filtros.dart';
+
 class FormConsulta extends StatefulWidget {
-  final bool isCarregando;
+  final ConsultaController controller;
   final ValueChanged<ServidorFiltros> onBuscar;
 
   const FormConsulta({
     super.key,
-    required this.isCarregando,
+    required this.controller,
     required this.onBuscar,
   });
 
@@ -17,22 +20,14 @@ class FormConsulta extends StatefulWidget {
 
 class _FormConsultaState extends State<FormConsulta> {
   bool _mostrarFiltrosAvancados = false;
-
-  // Estado do seletor moderno: true = Similaridade, false = Exata
   bool _buscaSimilar = true;
-
-  // Limite padrão alinhado com o api.py
   int _limiteSelecionado = 100;
-
-  // UF selecionada
   String? _ufSelecionada;
 
-  // Controladores de Texto
   final TextEditingController _nomeController = TextEditingController();
   final TextEditingController _cargoController = TextEditingController();
   final TextEditingController _orgaoController = TextEditingController();
 
-  // Lista oficial das 27 Unidades Federativas do Brasil
   static const List<String> _estadosBrasil = [
     'AC',
     'AL',
@@ -63,8 +58,31 @@ class _FormConsultaState extends State<FormConsulta> {
     'TO',
   ];
 
-  // Opções de limite para a consulta no banco
   static const List<int> _opcoesLimite = [25, 50, 100, 200];
+
+  @override
+  void initState() {
+    super.initState();
+    _sincronizarComController();
+  }
+
+  void _sincronizarComController() {
+    final ativos = widget.controller.filtrosAtivos;
+    if (ativos != null) {
+      _nomeController.text = ativos.nome ?? '';
+      _cargoController.text = ativos.cargo ?? '';
+      _orgaoController.text = ativos.orgao ?? '';
+      _ufSelecionada = ativos.uf;
+      _limiteSelecionado = ativos.limite;
+      _buscaSimilar = ativos.buscaSimilar;
+
+      if ((ativos.cargo != null && ativos.cargo!.isNotEmpty) ||
+          (ativos.orgao != null && ativos.orgao!.isNotEmpty) ||
+          (ativos.uf != null && ativos.uf!.isNotEmpty)) {
+        _mostrarFiltrosAvancados = true;
+      }
+    }
+  }
 
   @override
   void dispose() {
@@ -75,23 +93,38 @@ class _FormConsultaState extends State<FormConsulta> {
   }
 
   void _dispararBusca() {
-    // Empacota todos os filtros selecionados
+    final nome = _nomeController.text.trim();
+    final cargo = _cargoController.text.trim();
+    final orgao = _orgaoController.text.trim();
+    final uf = _ufSelecionada;
+
+    // Exige ao menos um campo qualquer preenchido
+    final bool temAoMenosUmCampo =
+        nome.isNotEmpty ||
+        cargo.isNotEmpty ||
+        orgao.isNotEmpty ||
+        (uf != null && uf.isNotEmpty);
+
+    if (!temAoMenosUmCampo) {
+      AppFeedback.mostrarSnackBar(
+        context,
+        mensagem:
+            'Preencha ou selecione ao menos um campo para realizar a consulta.',
+        isSucesso: false,
+      );
+      return;
+    }
+
     final filtros = ServidorFiltros(
-      nome: _nomeController.text.trim().isEmpty
-          ? null
-          : _nomeController.text.trim(),
-      cargo: _cargoController.text.trim().isEmpty
-          ? null
-          : _cargoController.text.trim(),
-      orgao: _orgaoController.text.trim().isEmpty
-          ? null
-          : _orgaoController.text.trim(),
-      uf: _ufSelecionada,
+      nome: nome.isEmpty ? null : nome,
+      cargo: cargo.isEmpty ? null : cargo,
+      orgao: orgao.isEmpty ? null : orgao,
+      uf: uf,
       buscaSimilar: _buscaSimilar,
       limite: _limiteSelecionado,
+      pagina: 1,
     );
 
-    // Emite o evento para a tela inteligente pai
     widget.onBuscar(filtros);
   }
 
@@ -104,6 +137,7 @@ class _FormConsultaState extends State<FormConsulta> {
       _limiteSelecionado = 100;
       _buscaSimilar = true;
     });
+    widget.controller.resetarBusca();
   }
 
   @override
@@ -117,16 +151,15 @@ class _FormConsultaState extends State<FormConsulta> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // ================================================================
-            // 1. LINHA PRINCIPAL: Nome + Alternador de Similaridade
+            // 1. LINHA PRINCIPAL: Nome + Modo de Busca + Limite
             // ================================================================
             Wrap(
               spacing: 16,
               runSpacing: 16,
               crossAxisAlignment: WrapCrossAlignment.end,
               children: [
-                // Campo Nome com botão para limpar
                 SizedBox(
-                  width: 360,
+                  width: 320,
                   child: _CampoComLabel(
                     label: 'Nome do Servidor',
                     child: TextField(
@@ -138,21 +171,16 @@ class _FormConsultaState extends State<FormConsulta> {
                         suffixIcon: _nomeController.text.isNotEmpty
                             ? IconButton(
                                 icon: const Icon(Icons.clear, size: 18),
-                                onPressed: () {
-                                  setState(() {
-                                    _nomeController.clear();
-                                  });
-                                },
+                                onPressed: () =>
+                                    setState(() => _nomeController.clear()),
                               )
                             : null,
                       ),
-                      onChanged: (_) =>
-                          setState(() {}), // Atualiza ícone de limpar
+                      onChanged: (_) => setState(() {}),
                     ),
                   ),
                 ),
 
-                // Alternador de Modo de Busca (SegmentedButton do Material 3)
                 _CampoComLabel(
                   label: 'Modo de Correspondência',
                   child: SegmentedButton<bool>(
@@ -167,22 +195,45 @@ class _FormConsultaState extends State<FormConsulta> {
                         value: false,
                         label: Text('Exata'),
                         icon: Icon(Icons.text_fields),
-                        tooltip: 'Busca o nome exatamente como digitado',
+                        tooltip: 'Busca exata',
                       ),
                     ],
                     selected: {_buscaSimilar},
                     onSelectionChanged: (Set<bool> novaSelecao) {
-                      setState(() {
-                        _buscaSimilar = novaSelecao.first;
-                      });
+                      setState(() => _buscaSimilar = novaSelecao.first);
                     },
+                  ),
+                ),
+
+                SizedBox(
+                  width: 150,
+                  child: _CampoComLabel(
+                    label: 'Limite de Linhas',
+                    child: DropdownButtonFormField<int>(
+                      initialValue: _limiteSelecionado,
+                      isExpanded: true,
+                      items: _opcoesLimite.map((limite) {
+                        return DropdownMenuItem<int>(
+                          value: limite,
+                          child: Text('$limite itens'),
+                        );
+                      }).toList(),
+                      onChanged: (novoLimite) {
+                        if (novoLimite != null) {
+                          setState(() => _limiteSelecionado = novoLimite);
+                        }
+                      },
+                      decoration: const InputDecoration(
+                        prefixIcon: Icon(Icons.format_list_numbered),
+                      ),
+                    ),
                   ),
                 ),
               ],
             ),
 
             // ================================================================
-            // 2. SANFONA DE FILTROS AVANÇADOS (Órgão, Cargo, UF e Limite)
+            // 2. SANFONA DE FILTROS AVANÇADOS (Cargo, Órgão e UF)
             // ================================================================
             AnimatedSize(
               duration: const Duration(milliseconds: 300),
@@ -199,9 +250,8 @@ class _FormConsultaState extends State<FormConsulta> {
                             spacing: 16,
                             runSpacing: 16,
                             children: [
-                              // Cargo
                               SizedBox(
-                                width: 280,
+                                width: 300,
                                 child: _CampoComLabel(
                                   label: 'Cargo / Profissão',
                                   child: TextField(
@@ -215,16 +265,15 @@ class _FormConsultaState extends State<FormConsulta> {
                                 ),
                               ),
 
-                              // Órgão / Instituição
                               SizedBox(
-                                width: 320,
+                                width: 340,
                                 child: _CampoComLabel(
                                   label: 'Órgão / Instituição',
                                   child: TextField(
                                     controller: _orgaoController,
                                     onSubmitted: (_) => _dispararBusca(),
                                     decoration: const InputDecoration(
-                                      hintText: 'Ex: Ministério da Saúde...',
+                                      hintText: 'Ex: Ministério da Educação...',
                                       prefixIcon: Icon(
                                         Icons.account_balance_outlined,
                                       ),
@@ -233,9 +282,8 @@ class _FormConsultaState extends State<FormConsulta> {
                                 ),
                               ),
 
-                              // Dropdown de UF
                               SizedBox(
-                                width: 130,
+                                width: 140,
                                 child: _CampoComLabel(
                                   label: 'Estado (UF)',
                                   child: DropdownButtonFormField<String>(
@@ -249,42 +297,10 @@ class _FormConsultaState extends State<FormConsulta> {
                                       );
                                     }).toList(),
                                     onChanged: (novoUf) {
-                                      setState(() {
-                                        _ufSelecionada = novoUf;
-                                      });
+                                      setState(() => _ufSelecionada = novoUf);
                                     },
                                     decoration: const InputDecoration(
                                       prefixIcon: Icon(Icons.map_outlined),
-                                    ),
-                                  ),
-                                ),
-                              ),
-
-                              // Dropdown de Limite de Resultados (Requisito da API)
-                              SizedBox(
-                                width: 150,
-                                child: _CampoComLabel(
-                                  label: 'Limite de Linhas',
-                                  child: DropdownButtonFormField<int>(
-                                    initialValue: _limiteSelecionado,
-                                    isExpanded: true,
-                                    items: _opcoesLimite.map((limite) {
-                                      return DropdownMenuItem<int>(
-                                        value: limite,
-                                        child: Text('$limite registros'),
-                                      );
-                                    }).toList(),
-                                    onChanged: (novoLimite) {
-                                      if (novoLimite != null) {
-                                        setState(() {
-                                          _limiteSelecionado = novoLimite;
-                                        });
-                                      }
-                                    },
-                                    decoration: const InputDecoration(
-                                      prefixIcon: Icon(
-                                        Icons.format_list_numbered,
-                                      ),
                                     ),
                                   ),
                                 ),
@@ -298,9 +314,7 @@ class _FormConsultaState extends State<FormConsulta> {
 
             const SizedBox(height: 24),
 
-            // ================================================================
-            // 3. BARRA DE AÇÕES (Limpar, Expandir e Submeter)
-            // ================================================================
+            // Barra de Ações
             Wrap(
               alignment: WrapAlignment.spaceBetween,
               crossAxisAlignment: WrapCrossAlignment.center,
@@ -308,40 +322,34 @@ class _FormConsultaState extends State<FormConsulta> {
               spacing: 16,
               runSpacing: 16,
               children: [
-                // Botão de Sanfona
                 TextButton.icon(
                   onPressed: () {
-                    setState(() {
-                      _mostrarFiltrosAvancados = !_mostrarFiltrosAvancados;
-                    });
+                    setState(
+                      () =>
+                          _mostrarFiltrosAvancados = !_mostrarFiltrosAvancados,
+                    );
                   },
                   icon: Icon(
                     _mostrarFiltrosAvancados ? Icons.expand_less : Icons.tune,
                   ),
                   label: Text(
                     _mostrarFiltrosAvancados
-                        ? 'Recolher filtros'
-                        : 'Filtros avançados (Órgão, UF, Limite)',
+                        ? 'Ocultar filtros específicos'
+                        : 'Mais opções (Cargo, Órgão, UF)',
                   ),
                 ),
 
-                // Grupo de botões da direita
                 Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    // Botão para resetar formulário
                     TextButton.icon(
-                      onPressed: widget.isCarregando
-                          ? null
-                          : _limparTodosCampos,
+                      onPressed: _limparTodosCampos,
                       icon: const Icon(Icons.refresh),
                       label: const Text('Limpar'),
                     ),
                     const SizedBox(width: 12),
-
-                    // Botão Principal de Busca
                     ElevatedButton.icon(
-                      onPressed: widget.isCarregando ? null : _dispararBusca,
+                      onPressed: _dispararBusca,
                       style: ElevatedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(
                           horizontal: 24,
@@ -349,21 +357,10 @@ class _FormConsultaState extends State<FormConsulta> {
                         ),
                         elevation: 2,
                       ),
-                      icon: widget.isCarregando
-                          ? const SizedBox(
-                              width: 18,
-                              height: 18,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: Colors.white,
-                              ),
-                            )
-                          : const Icon(Icons.search),
-                      label: Text(
-                        widget.isCarregando
-                            ? 'Consultando...'
-                            : 'Aplicar Filtros',
-                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      icon: const Icon(Icons.search),
+                      label: const Text(
+                        'Aplicar Filtros',
+                        style: TextStyle(fontWeight: FontWeight.bold),
                       ),
                     ),
                   ],
@@ -377,7 +374,6 @@ class _FormConsultaState extends State<FormConsulta> {
   }
 }
 
-/// Componente utilitário que padroniza o visual de Rótulo acima do Campo
 class _CampoComLabel extends StatelessWidget {
   final String label;
   final Widget child;

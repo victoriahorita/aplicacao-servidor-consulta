@@ -1,12 +1,13 @@
-import 'package:consulta_servidor/features/consulta/models/servidor_filtros.dart';
+import 'package:consulta_servidor/core/utils/consulta_flow.dart';
+import 'package:consulta_servidor/features/consulta/controllers/consulta_controller.dart';
 import 'package:consulta_servidor/features/historico/models/item_historico.dart';
 import 'package:consulta_servidor/features/historico/services/historico_services.dart';
 import 'package:flutter/material.dart';
 
 class ScreenHistorico extends StatelessWidget {
-  final ValueChanged<ServidorFiltros> onRepetirBusca;
+  final ConsultaController controller;
 
-  const ScreenHistorico({super.key, required this.onRepetirBusca});
+  const ScreenHistorico({super.key, required this.controller});
 
   void _confirmarLimpeza(BuildContext context, HistoricoService service) {
     showDialog(
@@ -261,7 +262,13 @@ class ScreenHistorico extends StatelessWidget {
 
                             // Ações do Cartão
                             ElevatedButton.icon(
-                              onPressed: () => onRepetirBusca(item.filtros),
+                              onPressed: () {
+                                ConsultaFlow.executar(
+                                  context: context,
+                                  controller: controller,
+                                  filtros: item.filtros,
+                                );
+                              },
                               icon: const Icon(Icons.replay_rounded, size: 18),
                               label: const Text('Repetir Busca'),
                               style: ElevatedButton.styleFrom(
