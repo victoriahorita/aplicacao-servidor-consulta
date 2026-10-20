@@ -2,3 +2,5 @@ Flask
 Flask-Cors
 psycopg[binary]
 python-dotenv
+gunicorn
+pytest

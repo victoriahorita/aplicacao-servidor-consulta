@@ -1,0 +1,14 @@
+.git
+.gitignore
+
+.env
+**/.env
+
+**/.venv
+**/__pycache__
+**/.pytest_cache
+
+db/raw_data/
+db/clean_data/
+
+*.pyc
