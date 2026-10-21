@@ -2,10 +2,12 @@ import psycopg, logging
 from flask import Blueprint, jsonify, request as req
 from db import get_connection
 from psycopg.rows import dict_row
+from limitador import limitar_concorrencia
 
 api = Blueprint("api", __name__, url_prefix="/api")
 
 @api.route("/servidores", methods=['GET'])
+@limitar_concorrencia
 def search():
     def safe_cast(param, tipo, default):
         try:
